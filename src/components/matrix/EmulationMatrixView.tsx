@@ -303,9 +303,9 @@ export const EmulationMatrixView: React.FC<EmulationMatrixViewProps> = ({
           <button
             type="button"
             onClick={clearDeviceFilter}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
               selectedDeviceIds.length === 0
-                ? 'bg-purple-600 text-white shadow-xs font-bold'
+                ? 'bg-purple-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-[#222226] text-slate-700 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-[#2b2b31] border border-slate-200 dark:border-[#2f2f36]'
             }`}
           >
@@ -321,9 +321,9 @@ export const EmulationMatrixView: React.FC<EmulationMatrixViewProps> = ({
                 key={dev.id}
                 type="button"
                 onClick={() => toggleDeviceSelection(dev.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-purple-600 text-white shadow-xs font-bold'
+                    ? 'bg-purple-600 text-white shadow-xs'
                     : 'bg-slate-100 dark:bg-[#222226] text-slate-700 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-[#2b2b31] border border-slate-200 dark:border-[#2f2f36]'
                 }`}
                 title={`${dev.name} (${dev.cpu || dev.system})`}
@@ -337,7 +337,7 @@ export const EmulationMatrixView: React.FC<EmulationMatrixViewProps> = ({
                 >
                   {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
-                <span className="font-mono">{dev.name}</span>
+                <span>{dev.name}</span>
                 {dev.cpu && (
                   <span
                     className={`text-[10px] truncate max-w-[90px] opacity-75 ${
@@ -393,9 +393,9 @@ export const EmulationMatrixView: React.FC<EmulationMatrixViewProps> = ({
           <button
             type="button"
             onClick={() => setSelectedGroup('all')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
               selectedGroup === 'all'
-                ? 'bg-purple-600 text-white shadow-xs font-bold'
+                ? 'bg-purple-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-[#222226] text-slate-700 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-[#2b2b31] border border-slate-200 dark:border-[#2f2f36]'
             }`}
           >
@@ -421,9 +421,9 @@ export const EmulationMatrixView: React.FC<EmulationMatrixViewProps> = ({
                 key={grp.id}
                 type="button"
                 onClick={() => setSelectedGroup(grp.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-purple-600 text-white shadow-xs font-bold'
+                    ? 'bg-purple-600 text-white shadow-xs'
                     : 'bg-slate-100 dark:bg-[#222226] text-slate-700 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-[#2b2b31] border border-slate-200 dark:border-[#2f2f36]'
                 }`}
               >

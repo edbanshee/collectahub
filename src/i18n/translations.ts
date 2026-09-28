@@ -474,6 +474,8 @@ export const translations = {
     // Cloud Onboarding Modal
     onboardingTitle: '¡Bienvenido a CollectaHub!',
     onboardingSubtitle: 'Has iniciado sesión con {email}. La nube vinculada a tu cuenta de Google está actualmente vacía, pero detectamos datos en tu espacio local.',
+    onboardingCleanSubtitle: 'Has iniciado sesión con {email}. Tu bóveda en la nube está lista y comenzará completamente limpia.',
+    onboardingCleanAction: 'Comenzar a Usar CollectaHub',
     onboardingQuestion: '¿Cómo deseas inicializar el almacenamiento en tu cuenta de Google?',
     onboardingOptionSyncTitle: 'Sincronizar e Importar Datos Locales',
     onboardingOptionSyncDesc: 'Copia tus {deviceCount} dispositivo(s), {accessoryCount} accesorio(s) y {driveCount} unidad(es) actuales a la nube vinculada a tu cuenta de Google para tener acceso desde cualquier dispositivo.',
@@ -1090,6 +1092,8 @@ export const translations = {
     // Cloud Onboarding Modal
     onboardingTitle: 'Welcome to CollectaHub!',
     onboardingSubtitle: 'You are signed in as {email}. The cloud storage linked to your Google account is empty, but we found existing data in your local browser workspace.',
+    onboardingCleanSubtitle: 'You are signed in as {email}. Your cloud vault is ready and will start completely fresh and clean.',
+    onboardingCleanAction: 'Get Started with CollectaHub',
     onboardingQuestion: 'How would you like to initialize storage in your Google account?',
     onboardingOptionSyncTitle: 'Sync & Import Local Data',
     onboardingOptionSyncDesc: 'Copy your current {deviceCount} device(s), {accessoryCount} accessory(ies), and {driveCount} drive(s) to the cloud linked to your Google account to access them from anywhere.',

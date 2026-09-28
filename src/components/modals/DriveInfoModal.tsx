@@ -129,7 +129,7 @@ export const DriveInfoModal: React.FC<DriveInfoModalProps> = ({
                     </p>
                   </div>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 shrink-0">
+                <span className="px-2 py-0.5 rounded-lg text-[10px] font-normal bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 shrink-0">
                   {linkedDevice.category}
                 </span>
               </div>

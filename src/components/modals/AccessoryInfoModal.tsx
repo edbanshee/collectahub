@@ -50,17 +50,17 @@ export const AccessoryInfoModal: React.FC<AccessoryInfoModalProps> = ({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                <span className="inline-block px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-800">
+                <span className="inline-block px-2 py-0.5 rounded-lg text-[10px] font-normal bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-800">
                   {accessory.category}
                 </span>
                 <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-medium border ${ratingConfig.badgeBg} ${ratingConfig.badgeBorder} ${ratingConfig.textColor}`}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-normal border ${ratingConfig.badgeBg} ${ratingConfig.badgeBorder} ${ratingConfig.textColor}`}
                 >
-                  <span className="text-[10px] font-medium opacity-90">
+                  <span className="opacity-90">
                     {language === 'es' ? 'Estado' : 'Condition'}
                   </span>
-                  <Star className={`w-3.5 h-3.5 ${ratingConfig.starColor}`} />
-                  <span>{safeRating}</span>
+                  <Star className={`w-3 h-3 ${ratingConfig.starColor}`} />
+                  <span className="font-semibold">{safeRating}</span>
                 </span>
               </div>
               <h3 className="text-base font-extrabold text-slate-900 dark:text-[#f4f4f5] truncate">

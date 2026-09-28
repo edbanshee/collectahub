@@ -113,21 +113,21 @@ export const DeviceInfoModal: React.FC<DeviceInfoModalProps> = ({
                 {device.name}
               </h3>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                <span className="px-2 py-0.5 rounded-lg text-[10px] font-normal bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
                   {device.category}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-[#a1a1aa] font-medium">
+                <span className="text-[11px] text-slate-500 dark:text-[#a1a1aa] font-normal">
                   {device.system}
                 </span>
                 <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-medium border ${deviceRatingConfig.badgeBg} ${deviceRatingConfig.badgeBorder} ${deviceRatingConfig.textColor}`}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-normal border ${deviceRatingConfig.badgeBg} ${deviceRatingConfig.badgeBorder} ${deviceRatingConfig.textColor}`}
                   title={`${language === 'es' ? 'Estado físico' : 'Physical condition'}: ${safeDeviceRating}/5 (${deviceRatingConfig.label[language] || deviceRatingConfig.label.es})`}
                 >
-                  <span className="text-[10px] font-medium opacity-90">
+                  <span className="opacity-90">
                     {language === 'es' ? 'Estado' : 'Condition'}
                   </span>
-                  <Star className={`w-3.5 h-3.5 ${deviceRatingConfig.starColor}`} />
-                  <span>{safeDeviceRating}</span>
+                  <Star className={`w-3 h-3 ${deviceRatingConfig.starColor}`} />
+                  <span className="font-semibold">{safeDeviceRating}</span>
                 </span>
               </div>
             </div>

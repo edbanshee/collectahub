@@ -40,18 +40,18 @@ export const AccessoryCard: React.FC<AccessoryCardProps> = ({
       {/* 1. Card Top Bar: Category Pill & Unified Estado Badge on Left, Actions on Right */}
       <div className="p-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-normal bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
             <span>{accessory.category}</span>
           </span>
           <div
-            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border text-[11px] font-medium ${ratingConfig.badgeBg} ${ratingConfig.badgeBorder} ${ratingConfig.textColor}`}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-normal ${ratingConfig.badgeBg} ${ratingConfig.badgeBorder} ${ratingConfig.textColor}`}
             title={`${language === 'es' ? 'Estado físico' : 'Physical condition'}: ${safeRating}/5 (${ratingConfig.label[language] || ratingConfig.label.es})`}
           >
-            <span className="text-[10px] font-medium opacity-90">
+            <span className="opacity-90">
               {language === 'es' ? 'Estado' : 'Condition'}
             </span>
-            <Star className={`w-3.5 h-3.5 ${ratingConfig.starColor}`} />
-            <span>{safeRating}</span>
+            <Star className={`w-3 h-3 ${ratingConfig.starColor}`} />
+            <span className="font-semibold">{safeRating}</span>
           </div>
         </div>
 

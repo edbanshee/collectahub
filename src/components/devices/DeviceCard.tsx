@@ -82,23 +82,23 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
       {/* 1. Header with Category Pill, Unified Physical Rating Badge and Action Icons */}
       <div className="p-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-normal bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
             {device.isGamingDevice ? (
-              <Gamepad2 className="w-3.5 h-3.5 text-purple-500" />
+              <Gamepad2 className="w-3 h-3 text-purple-500" />
             ) : (
-              <Laptop className="w-3.5 h-3.5 text-blue-500" />
+              <Laptop className="w-3 h-3 text-blue-500" />
             )}
             <span>{device.category}</span>
           </span>
           <div
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[11px] font-medium ${deviceRatingConfig.badgeBg} ${deviceRatingConfig.badgeBorder} ${deviceRatingConfig.textColor}`}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-normal ${deviceRatingConfig.badgeBg} ${deviceRatingConfig.badgeBorder} ${deviceRatingConfig.textColor}`}
             title={`${language === 'es' ? 'Estado físico' : 'Physical condition'}: ${safeDeviceRating}/5 (${deviceRatingConfig.label[language] || deviceRatingConfig.label.es})`}
           >
-            <span className="text-[10px] font-medium opacity-90">
+            <span className="opacity-90">
               {language === 'es' ? 'Estado' : 'Condition'}
             </span>
-            <Star className={`w-3.5 h-3.5 ${deviceRatingConfig.starColor}`} />
-            <span>{safeDeviceRating}</span>
+            <Star className={`w-3 h-3 ${deviceRatingConfig.starColor}`} />
+            <span className="font-semibold">{safeDeviceRating}</span>
           </div>
         </div>
 
@@ -298,7 +298,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
                       <span className="font-semibold text-slate-800 dark:text-[#f4f4f5] truncate">
                         {acc.name}
                       </span>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-100 dark:bg-[#222226] text-slate-500 dark:text-[#a1a1aa] shrink-0">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-normal bg-slate-100 dark:bg-[#222226] text-slate-500 dark:text-[#a1a1aa] shrink-0">
                         {acc.category}
                       </span>
                     </button>

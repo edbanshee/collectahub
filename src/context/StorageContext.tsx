@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import {
   collection,
   doc,
+  getDoc,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -37,6 +38,14 @@ const GUEST_BACKUP_DEVICES_KEY = 'storage_tracker_guest_backup_devices';
 const GUEST_BACKUP_DRIVES_KEY = 'storage_tracker_guest_backup_drives';
 const GUEST_BACKUP_ACCESSORIES_KEY = 'storage_tracker_guest_backup_accessories';
 const GUEST_BACKUP_SETTINGS_KEY = 'storage_tracker_guest_backup_settings';
+
+// Legacy keys for complete cross-version sanitization
+const LEGACY_GUEST_KEYS = [
+  'collectahub_guest_devices',
+  'collectahub_guest_drives',
+  'collectahub_guest_accessories',
+  'collectahub_guest_settings',
+];
 
 enum OperationType {
   CREATE = 'create',
@@ -293,29 +302,38 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     // Authenticated User:
     // A. Backup guest workspace safely
-    const currentGuestDevs = localStorage.getItem(GUEST_DEVICES_KEY);
-    const currentGuestDrives = localStorage.getItem(GUEST_DRIVES_KEY);
-    const currentGuestAccessories = localStorage.getItem(GUEST_ACCESSORIES_KEY);
-    const currentGuestSettings = localStorage.getItem(GUEST_SETTINGS_KEY);
+    const currentGuestDevs =
+      localStorage.getItem(GUEST_DEVICES_KEY) || localStorage.getItem('collectahub_guest_devices');
+    const currentGuestDrives =
+      localStorage.getItem(GUEST_DRIVES_KEY) || localStorage.getItem('collectahub_guest_drives');
+    const currentGuestAccessories =
+      localStorage.getItem(GUEST_ACCESSORIES_KEY) || localStorage.getItem('collectahub_guest_accessories');
+    const currentGuestSettings =
+      localStorage.getItem(GUEST_SETTINGS_KEY) || localStorage.getItem('collectahub_guest_settings');
 
     if (currentGuestDevs) localStorage.setItem(GUEST_BACKUP_DEVICES_KEY, currentGuestDevs);
     if (currentGuestDrives) localStorage.setItem(GUEST_BACKUP_DRIVES_KEY, currentGuestDrives);
     if (currentGuestAccessories) localStorage.setItem(GUEST_BACKUP_ACCESSORIES_KEY, currentGuestAccessories);
     if (currentGuestSettings) localStorage.setItem(GUEST_BACKUP_SETTINGS_KEY, currentGuestSettings);
 
+    // Clean up legacy keys so they never cause zombie counts or desyncs
     try {
-      const parsedDevs = currentGuestDevs ? JSON.parse(currentGuestDevs) : INITIAL_DEVICES;
-      const parsedDrives = currentGuestDrives ? JSON.parse(currentGuestDrives) : INITIAL_DRIVES;
-      const parsedAccessories = currentGuestAccessories ? JSON.parse(currentGuestAccessories) : INITIAL_ACCESSORIES;
+      LEGACY_GUEST_KEYS.forEach((k) => localStorage.removeItem(k));
+    } catch {}
+
+    try {
+      const parsedDevs = currentGuestDevs ? JSON.parse(currentGuestDevs) : [];
+      const parsedDrives = currentGuestDrives ? JSON.parse(currentGuestDrives) : [];
+      const parsedAccessories = currentGuestAccessories ? JSON.parse(currentGuestAccessories) : [];
       const parsedSettings = currentGuestSettings ? JSON.parse(currentGuestSettings) : INITIAL_SETTINGS;
 
       guestSnapshotRef.current = {
-        devices: (Array.isArray(parsedDevs) ? parsedDevs : INITIAL_DEVICES).map((d) => ({
+        devices: (Array.isArray(parsedDevs) ? parsedDevs : []).map((d) => ({
           ...d,
           rating: getSafeRating(d.rating, 5),
         })),
-        drives: Array.isArray(parsedDrives) ? parsedDrives : INITIAL_DRIVES,
-        accessories: (Array.isArray(parsedAccessories) ? parsedAccessories : INITIAL_ACCESSORIES).map((a) => ({
+        drives: Array.isArray(parsedDrives) ? parsedDrives : [],
+        accessories: (Array.isArray(parsedAccessories) ? parsedAccessories : []).map((a) => ({
           ...a,
           rating: getSafeRating(a.rating, 5),
         })),
@@ -328,15 +346,15 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
     } catch {
       guestSnapshotRef.current = {
-        devices: INITIAL_DEVICES,
-        drives: INITIAL_DRIVES,
-        accessories: INITIAL_ACCESSORIES,
+        devices: [],
+        drives: [],
+        accessories: [],
         settings: INITIAL_SETTINGS,
       };
       setPendingImportCounts({
-        devices: INITIAL_DEVICES.length,
-        drives: INITIAL_DRIVES.length,
-        accessories: INITIAL_ACCESSORIES.length,
+        devices: 0,
+        drives: 0,
+        accessories: 0,
       });
     }
 
@@ -426,7 +444,20 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           initialCheckDone = true;
           const devSnap = await getDocs(devicesCol);
           if (devSnap.empty && loadedDrives.length === 0) {
-            setShowOnboardingModal(true);
+            const hasLocalData =
+              guestSnapshotRef.current.devices.length > 0 ||
+              guestSnapshotRef.current.drives.length > 0 ||
+              guestSnapshotRef.current.accessories.length > 0;
+            if (hasLocalData) {
+              setShowOnboardingModal(true);
+            } else {
+              // Both cloud and local are clean/empty. Initialize default config silently.
+              const confRef = doc(db, 'users', userId, 'settings', 'config');
+              const confSnap = await getDoc(confRef);
+              if (!confSnap.exists()) {
+                await setDoc(confRef, cleanFirestoreData(INITIAL_SETTINGS));
+              }
+            }
           }
         }
       },
@@ -461,6 +492,9 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (newSettings) {
         localStorage.setItem(GUEST_SETTINGS_KEY, JSON.stringify(newSettings));
       }
+      try {
+        LEGACY_GUEST_KEYS.forEach((k) => localStorage.removeItem(k));
+      } catch {}
     }
   };
 
@@ -1279,6 +1313,13 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setAccessories([]);
         setSettings(EMPTY_SETTINGS);
         persistGuest([], [], [], EMPTY_SETTINGS);
+        try {
+          LEGACY_GUEST_KEYS.forEach((k) => localStorage.removeItem(k));
+          localStorage.removeItem(GUEST_BACKUP_DEVICES_KEY);
+          localStorage.removeItem(GUEST_BACKUP_DRIVES_KEY);
+          localStorage.removeItem(GUEST_BACKUP_ACCESSORIES_KEY);
+          localStorage.removeItem(GUEST_BACKUP_SETTINGS_KEY);
+        } catch {}
       }
       return;
     }
