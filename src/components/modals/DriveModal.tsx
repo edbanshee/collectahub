@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, HardDrive, Cloud, Tag, Plus, Check, AlertTriangle } from 'lucide-react';
 import { StorageDrive, StorageMedium, CloudProvider } from '../../types';
 import { useStorage } from '../../context/StorageContext';
@@ -84,8 +84,24 @@ export const DriveModal: React.FC<DriveModalProps> = ({
     );
   }, [settings.cloudProviders, drives, cloudProvider]);
 
+  const hasInitializedRef = useRef(false);
+  const lastEditIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      hasInitializedRef.current = false;
+      lastEditIdRef.current = null;
+      return;
+    }
+
+    const currentEditId = driveToEdit?.id || null;
+    if (hasInitializedRef.current && lastEditIdRef.current === currentEditId) {
+      // Form already initialized for this modal session; keep user input intact
+      return;
+    }
+
+    hasInitializedRef.current = true;
+    lastEditIdRef.current = currentEditId;
 
     if (driveToEdit) {
       setDevice(driveToEdit.device || '');

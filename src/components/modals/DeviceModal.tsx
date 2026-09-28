@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
   Gamepad2,
@@ -73,8 +73,24 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
     return `https://${trimmed}`;
   }, [imageUrl]);
 
+  const hasInitializedRef = useRef(false);
+  const lastEditIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      hasInitializedRef.current = false;
+      lastEditIdRef.current = null;
+      return;
+    }
+
+    const currentEditId = deviceToEdit?.id || null;
+    if (hasInitializedRef.current && lastEditIdRef.current === currentEditId) {
+      // Form already initialized for this modal session; keep user input intact
+      return;
+    }
+
+    hasInitializedRef.current = true;
+    lastEditIdRef.current = currentEditId;
 
     if (deviceToEdit) {
       setName(deviceToEdit.name);

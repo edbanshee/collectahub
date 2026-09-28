@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
   Sparkles,
@@ -54,8 +54,24 @@ export const AccessoryModal: React.FC<AccessoryModalProps> = ({
     return Array.from(new Set([...list, ...accessories.map((a) => a.category), category].filter(Boolean)));
   }, [settings.accessoryCategories, accessories, category]);
 
+  const hasInitializedRef = useRef(false);
+  const lastEditIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      hasInitializedRef.current = false;
+      lastEditIdRef.current = null;
+      return;
+    }
+
+    const currentEditId = accessoryToEdit?.id || null;
+    if (hasInitializedRef.current && lastEditIdRef.current === currentEditId) {
+      // Form already initialized for this modal session; keep user input intact
+      return;
+    }
+
+    hasInitializedRef.current = true;
+    lastEditIdRef.current = currentEditId;
 
     if (accessoryToEdit) {
       setName(accessoryToEdit.name);
