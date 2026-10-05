@@ -1,6 +1,13 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { initializeFirestore, Firestore, doc, getDocFromServer } from 'firebase/firestore';
+import {
+  initializeFirestore,
+  Firestore,
+  doc,
+  getDocFromServer,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -11,10 +18,26 @@ googleProvider.setCustomParameters({
   prompt: 'select_account',
 });
 
-// Configure Firestore with ignoreUndefinedProperties to prevent FirebaseError on undefined fields
-export const db: Firestore = (firebaseConfig as any).firestoreDatabaseId && (firebaseConfig as any).firestoreDatabaseId !== '(default)'
-  ? initializeFirestore(app, { ignoreUndefinedProperties: true }, (firebaseConfig as any).firestoreDatabaseId)
-  : initializeFirestore(app, { ignoreUndefinedProperties: true });
+// Configure Firestore with persistent local cache (IndexedDB) and ignoreUndefinedProperties
+export const db: Firestore =
+  (firebaseConfig as any).firestoreDatabaseId &&
+  (firebaseConfig as any).firestoreDatabaseId !== '(default)'
+    ? initializeFirestore(
+        app,
+        {
+          ignoreUndefinedProperties: true,
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager(),
+          }),
+        },
+        (firebaseConfig as any).firestoreDatabaseId
+      )
+    : initializeFirestore(app, {
+        ignoreUndefinedProperties: true,
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager(),
+        }),
+      });
 
 // Test connection on boot as recommended in Firebase integration skill
 export async function testFirestoreConnection() {

@@ -6,10 +6,12 @@ import {
   Info,
   Star,
   Laptop,
+  Maximize2,
 } from 'lucide-react';
 import { Accessory } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { AccessoryInfoModal } from '../modals/AccessoryInfoModal';
+import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { getRatingConfig, getSafeRating } from '../../utils/ratingColors';
 
 interface AccessoryCardProps {
@@ -25,6 +27,7 @@ export const AccessoryCard: React.FC<AccessoryCardProps> = ({
 }) => {
   const { t, language } = useLanguage();
   const [showInfo, setShowInfo] = useState(false);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
   const normalizedImageUrl = accessory.imageUrl?.trim()
     ? /^(https?:\/\/|data:|\/)/i.test(accessory.imageUrl.trim())
@@ -102,18 +105,28 @@ export const AccessoryCard: React.FC<AccessoryCardProps> = ({
         </div>
       </div>
 
-      {/* 3. Hero Image (if available) */}
+      {/* 3. Hero Image (Edge-to-Edge) */}
       {normalizedImageUrl && (
-        <div className="px-4 pb-3">
-          <div className="relative w-full h-36 rounded-xl overflow-hidden border border-slate-200 dark:border-[#27272b] bg-slate-950/40">
+        <div className="pb-3">
+          <div
+            onClick={() => setIsImageViewerOpen(true)}
+            className="group relative w-full h-44 bg-slate-950/40 border-y border-slate-200/80 dark:border-[#27272b] overflow-hidden cursor-zoom-in"
+            title={language === 'es' ? 'Haz clic para ver la imagen en pantalla completa' : 'Click to view image in full screen'}
+          >
             <img
               src={normalizedImageUrl}
               alt={accessory.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
             />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center pointer-events-none">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-xs text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-lg">
+                <Maximize2 className="w-3.5 h-3.5 text-purple-400" />
+                <span>{language === 'es' ? 'Ver en pantalla completa' : 'View full screen'}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -149,6 +162,14 @@ export const AccessoryCard: React.FC<AccessoryCardProps> = ({
         accessory={accessory}
         onClose={() => setShowInfo(false)}
         onEdit={onEdit}
+      />
+
+      {/* Fullscreen Image Lightbox Modal */}
+      <ImageViewerModal
+        isOpen={isImageViewerOpen}
+        imageUrl={normalizedImageUrl || null}
+        title={accessory.name}
+        onClose={() => setIsImageViewerOpen(false)}
       />
     </div>
   );

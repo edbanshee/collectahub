@@ -4,9 +4,9 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(({ command }) => {
-  // In production build for GitHub Pages (repo collectahub), use '/collectahub/'
-  // In dev / AI Studio preview, use relative './'
-  const base = process.env.VITE_BASE_PATH || (command === 'build' ? '/collectahub/' : './');
+  // In production build for GitHub Pages (repo collectahub), use '/collectahub/' or env var
+  // In dev / AI Studio preview, use '/'
+  const base = process.env.VITE_BASE_PATH || (command === 'build' ? '/collectahub/' : '/');
 
   return {
     base,

@@ -13,6 +13,7 @@ import {
   Info,
   Package,
   Star,
+  Maximize2,
 } from 'lucide-react';
 import { Device, StorageDrive } from '../../types';
 import { formatStorageGB } from '../../utils/formatters';
@@ -20,6 +21,7 @@ import { EMULATION_SYSTEMS } from '../../data/emulationCatalog';
 import { useLanguage } from '../../context/LanguageContext';
 import { useStorage } from '../../context/StorageContext';
 import { DriveInfoModal } from './DriveInfoModal';
+import { ImageViewerModal } from './ImageViewerModal';
 import { getRatingConfig, getSafeRating } from '../../utils/ratingColors';
 
 interface DeviceInfoModalProps {
@@ -44,6 +46,7 @@ export const DeviceInfoModal: React.FC<DeviceInfoModalProps> = ({
   const { accessories } = useStorage();
   const { t, language } = useLanguage();
   const [selectedDriveForInfo, setSelectedDriveForInfo] = useState<StorageDrive | null>(null);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -145,15 +148,25 @@ export const DeviceInfoModal: React.FC<DeviceInfoModalProps> = ({
         <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Banner Image */}
           {normalizedImageUrl && (
-            <div className="relative w-full h-44 sm:h-52 rounded-xl overflow-hidden border border-slate-200 dark:border-[#27272b] bg-slate-950 shadow-inner">
+            <div
+              onClick={() => setIsImageViewerOpen(true)}
+              className="group relative w-full h-44 sm:h-52 rounded-xl overflow-hidden border border-slate-200 dark:border-[#27272b] bg-slate-950 shadow-inner cursor-zoom-in transition-transform"
+              title={language === 'es' ? 'Haz clic para ver la imagen en pantalla completa' : 'Click to view image in full screen'}
+            >
               <img
                 src={normalizedImageUrl}
                 alt={device.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                 }}
               />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center pointer-events-none">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-xs text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-lg">
+                  <Maximize2 className="w-3.5 h-3.5 text-purple-400" />
+                  <span>{language === 'es' ? 'Ver en pantalla completa' : 'View full screen'}</span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -482,6 +495,14 @@ export const DeviceInfoModal: React.FC<DeviceInfoModalProps> = ({
             onEditDrive(dr);
           }
         }}
+      />
+
+      {/* Fullscreen Image Lightbox Modal */}
+      <ImageViewerModal
+        isOpen={isImageViewerOpen}
+        imageUrl={normalizedImageUrl || null}
+        title={device.name}
+        onClose={() => setIsImageViewerOpen(false)}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
   Sparkles,
@@ -7,9 +7,11 @@ import {
   Tag,
   Star,
   Laptop,
+  Maximize2,
 } from 'lucide-react';
 import { Accessory } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
+import { ImageViewerModal } from './ImageViewerModal';
 import { getRatingConfig, getSafeRating } from '../../utils/ratingColors';
 
 interface AccessoryInfoModalProps {
@@ -26,6 +28,7 @@ export const AccessoryInfoModal: React.FC<AccessoryInfoModalProps> = ({
   onEdit,
 }) => {
   const { t, language } = useLanguage();
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
   if (!isOpen || !accessory) return null;
 
@@ -81,15 +84,25 @@ export const AccessoryInfoModal: React.FC<AccessoryInfoModalProps> = ({
         <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Hero Image */}
           {normalizedImageUrl && (
-            <div className="relative w-full h-44 rounded-xl overflow-hidden border border-slate-200 dark:border-[#27272b] bg-slate-950/40">
+            <div
+              onClick={() => setIsImageViewerOpen(true)}
+              className="group relative w-full h-44 rounded-xl overflow-hidden border border-slate-200 dark:border-[#27272b] bg-slate-950/40 shadow-inner cursor-zoom-in transition-transform"
+              title={language === 'es' ? 'Haz clic para ver la imagen en pantalla completa' : 'Click to view image in full screen'}
+            >
               <img
                 src={normalizedImageUrl}
                 alt={accessory.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center pointer-events-none">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-xs text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-lg">
+                  <Maximize2 className="w-3.5 h-3.5 text-purple-400" />
+                  <span>{language === 'es' ? 'Ver en pantalla completa' : 'View full screen'}</span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -182,7 +195,7 @@ export const AccessoryInfoModal: React.FC<AccessoryInfoModalProps> = ({
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               <Edit2 className="w-3.5 h-3.5" />
-              <span>Editar Accesorio</span>
+              <span>{language === 'es' ? 'Editar Accesorio' : 'Edit Accessory'}</span>
             </button>
           ) : <div />}
 
@@ -195,6 +208,14 @@ export const AccessoryInfoModal: React.FC<AccessoryInfoModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Fullscreen Image Lightbox Modal */}
+      <ImageViewerModal
+        isOpen={isImageViewerOpen}
+        imageUrl={normalizedImageUrl || null}
+        title={accessory.name}
+        onClose={() => setIsImageViewerOpen(false)}
+      />
     </div>
   );
 };

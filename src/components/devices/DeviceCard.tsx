@@ -12,6 +12,7 @@ import {
   Sparkles,
   Star,
   ExternalLink,
+  Maximize2,
 } from 'lucide-react';
 import { Device, StorageDrive, Accessory } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
@@ -19,6 +20,7 @@ import { formatStorageGB } from '../../utils/formatters';
 import { DeviceInfoModal } from '../modals/DeviceInfoModal';
 import { DriveInfoModal } from '../modals/DriveInfoModal';
 import { AccessoryInfoModal } from '../modals/AccessoryInfoModal';
+import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { getRatingConfig, getSafeRating } from '../../utils/ratingColors';
 
 interface DeviceCardProps {
@@ -48,6 +50,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [selectedDriveForInfo, setSelectedDriveForInfo] = useState<StorageDrive | null>(null);
   const [selectedAccessoryForInfo, setSelectedAccessoryForInfo] = useState<Accessory | null>(null);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
   const deviceDrives = drives.filter((dr) => dr.device === device.name);
   const deviceAccessories = accessories.filter((acc) => acc.device === device.name);
@@ -146,10 +149,14 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
         </p>
       </div>
 
-      {/* 3. Hero Device Image */}
+      {/* 3. Hero Device Image (Edge-to-Edge) */}
       {device.imageUrl && (
-        <div className="px-5 pb-4">
-          <div className="relative w-full h-44 rounded-xl overflow-hidden border border-slate-200 dark:border-[#27272b] bg-slate-950/40">
+        <div className="pb-4">
+          <div
+            onClick={() => setIsImageViewerOpen(true)}
+            className="group relative w-full h-48 sm:h-52 bg-slate-950/40 border-y border-slate-200/80 dark:border-[#27272b] overflow-hidden cursor-zoom-in"
+            title={language === 'es' ? 'Haz clic para ver la imagen en pantalla completa' : 'Click to view image in full screen'}
+          >
             <img
               src={
                 /^(https?:\/\/|data:|\/)/i.test(device.imageUrl.trim())
@@ -157,11 +164,17 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
                   : `https://${device.imageUrl.trim()}`
               }
               alt={device.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
             />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center pointer-events-none">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-xs text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-lg">
+                <Maximize2 className="w-3.5 h-3.5 text-purple-400" />
+                <span>{language === 'es' ? 'Ver en pantalla completa' : 'View full screen'}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -438,6 +451,20 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
           setSelectedAccessoryForInfo(null);
           onEditAccessory?.(acc);
         }}
+      />
+
+      {/* Fullscreen Image Lightbox Modal */}
+      <ImageViewerModal
+        isOpen={isImageViewerOpen}
+        imageUrl={
+          device.imageUrl?.trim()
+            ? /^(https?:\/\/|data:|\/)/i.test(device.imageUrl.trim())
+              ? device.imageUrl.trim()
+              : `https://${device.imageUrl.trim()}`
+            : null
+        }
+        title={device.name}
+        onClose={() => setIsImageViewerOpen(false)}
       />
     </div>
   );

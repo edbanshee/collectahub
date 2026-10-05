@@ -85,8 +85,8 @@ export const AtomicWipeModal: React.FC<AtomicWipeModalProps> = ({
       await atomicWipe('all');
       showToast(
         language === 'es'
-          ? 'Almacenamiento local vaciado con éxito.'
-          : 'Local storage wiped successfully.',
+          ? 'Espacio local vaciado con éxito.'
+          : 'Local data wiped successfully.',
         'success'
       );
       setTypedConfirm('');
