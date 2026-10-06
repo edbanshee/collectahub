@@ -30,7 +30,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
   deviceToEdit,
 }) => {
   const { devices, settings, saveDevice, addOption } = useStorage();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showToast } = useToast();
 
   const [name, setName] = useState('');
@@ -51,6 +51,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
 
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Auto-sync available categories
   const availableCategories = useMemo(() => {
@@ -135,6 +136,99 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
       showToast(`Categoría "${clean}" añadida.`, 'success');
     } catch {
       showToast('Error al añadir categoría', 'error');
+    }
+  };
+
+  const handleAiAutofill = async () => {
+    const cleanName = name.trim();
+    if (!cleanName) {
+      showToast(t('aiSuggestPromptDeviceName'), 'warning');
+      return;
+    }
+
+    try {
+      setIsAiLoading(true);
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiBase}/api/gemini/suggest-device`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: cleanName,
+          availableCategories: settings.deviceCategories || [],
+          language,
+        }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error(
+            language === 'es'
+              ? 'Backend no encontrado (GitHub Pages es estático). Despliega el backend en Vercel o Render para habilitar la IA.'
+              : 'Backend not found (GitHub Pages is static). Deploy the backend to Vercel or Render to enable AI.'
+          );
+        }
+        throw new Error('API request failed');
+      }
+
+      const json = await res.json();
+      if (!json.success || !json.data) {
+        throw new Error('No suggestions found');
+      }
+
+      const d = json.data;
+      if (d.system) setSystem(d.system);
+      if (d.cpu) setCpu(d.cpu);
+      if (d.category) {
+        const match = (settings.deviceCategories || []).find(
+          (c) => c.toLowerCase() === d.category.toLowerCase()
+        );
+        if (match) {
+          setCategory(match);
+        } else if (d.category.trim()) {
+          try {
+            await addOption('category', d.category.trim());
+            setCategory(d.category.trim());
+          } catch {
+            // Keep existing category
+          }
+        }
+      }
+      if (d.emulationOverview) setEmulationOverview(d.emulationOverview.slice(0, 300));
+      if (d.notes) setNotes(d.notes.slice(0, 500));
+      if (typeof d.isGamingDevice === 'boolean') setIsGamingDevice(d.isGamingDevice);
+
+      if (d.emulationScores && typeof d.emulationScores === 'object') {
+        const newScores = { ...emulationScores };
+        const scoreKeyMap: Record<string, string> = {
+          ps2: 'PlayStation 2',
+          gamecube: 'Nintendo GameCube',
+          switch: 'Nintendo Switch',
+          psp: 'PlayStation Portable (PSP)',
+          '3ds': 'Nintendo 3DS',
+          ps1: 'PlayStation',
+          n64: 'Nintendo 64',
+          snes: 'SNES',
+          gba: 'Game Boy Advance',
+          wii: 'Nintendo Wii',
+          vita: 'PlayStation Vita',
+          dreamcast: 'Dreamcast',
+        };
+        for (const [key, val] of Object.entries(d.emulationScores)) {
+          const platformName = scoreKeyMap[key.toLowerCase()] || key;
+          const num = typeof val === 'number' ? Math.max(1, Math.min(5, Math.round(val))) : 5;
+          if (newScores[platformName] === undefined) {
+            newScores[platformName] = num;
+          }
+        }
+        setEmulationScores(newScores);
+      }
+
+      showToast(t('aiSuggestSuccessDevice'), 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast(t('aiSuggestError'), 'error');
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -326,9 +420,21 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                 <label className="block text-xs font-semibold text-slate-700 dark:text-[#d4d4d8]">
                   {t('deviceFieldName')} *
                 </label>
-                <span className={`text-[10px] font-mono ${name.length >= 60 ? 'text-amber-500 font-bold' : 'text-slate-400 dark:text-[#71717a]'}`}>
-                  {name.length}/60
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAiAutofill}
+                    disabled={isAiLoading}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold text-purple-600 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-200/80 dark:border-purple-800/60 rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs group"
+                    title={t('aiSuggestTooltip')}
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 text-purple-600 dark:text-purple-400 ${isAiLoading ? 'animate-spin' : 'group-hover:scale-110 transition-transform'}`} />
+                    <span>{isAiLoading ? t('aiSuggesting') : t('aiSuggestBtn')}</span>
+                  </button>
+                  <span className={`text-[10px] font-mono ${name.length >= 60 ? 'text-amber-500 font-bold' : 'text-slate-400 dark:text-[#71717a]'}`}>
+                    {name.length}/60
+                  </span>
+                </div>
               </div>
               <input
                 type="text"
@@ -548,9 +654,21 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                     <label className="block text-xs font-bold text-purple-950 dark:text-purple-200">
                       {t('deviceFieldEmulationOverview')}
                     </label>
-                    <span className={`text-[10px] font-mono ${emulationOverview.length >= 300 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-purple-700/70 dark:text-purple-300/70'}`}>
-                      {emulationOverview.length}/300
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAiAutofill}
+                        disabled={isAiLoading || !name.trim()}
+                        className="text-[11px] font-semibold text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-100 flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        title={t('aiSuggestTooltip')}
+                      >
+                        <Sparkles className={`w-3 h-3 ${isAiLoading ? 'animate-spin' : ''}`} />
+                        <span>{t('aiSuggestBtn')}</span>
+                      </button>
+                      <span className={`text-[10px] font-mono ${emulationOverview.length >= 300 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-purple-700/70 dark:text-purple-300/70'}`}>
+                        {emulationOverview.length}/300
+                      </span>
+                    </div>
                   </div>
                   <textarea
                     rows={2}
@@ -725,9 +843,21 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
               <label className="block text-xs font-semibold text-slate-700 dark:text-[#d4d4d8]">
                 {t('deviceFieldNotes')}
               </label>
-              <span className={`text-[10px] font-mono ${notes.length >= 500 ? 'text-amber-500 font-bold' : 'text-slate-400 dark:text-[#71717a]'}`}>
-                {notes.length}/500
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAiAutofill}
+                  disabled={isAiLoading || !name.trim()}
+                  className="text-[11px] font-semibold text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-100 flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title={t('aiSuggestTooltip')}
+                >
+                  <Sparkles className={`w-3 h-3 ${isAiLoading ? 'animate-spin' : ''}`} />
+                  <span>{t('aiSuggestBtn')}</span>
+                </button>
+                <span className={`text-[10px] font-mono ${notes.length >= 500 ? 'text-amber-500 font-bold' : 'text-slate-400 dark:text-[#71717a]'}`}>
+                  {notes.length}/500
+                </span>
+              </div>
             </div>
             <textarea
               rows={2}

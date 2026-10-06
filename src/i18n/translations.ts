@@ -527,6 +527,14 @@ export const translations = {
     ioSuccess: '¡Importación completada con éxito!',
     
     // Toasts & General
+    aiSuggestBtn: 'Sugerir con IA',
+    aiSuggesting: 'Buscando datos...',
+    aiSuggestSuccessDevice: '¡Especificaciones encontradas y aplicadas!',
+    aiSuggestSuccessAccessory: '¡Detalles del accesorio aplicados con IA!',
+    aiSuggestPromptDeviceName: 'Escribe primero el nombre del dispositivo para buscar datos con IA.',
+    aiSuggestPromptAccessoryName: 'Escribe primero el nombre del accesorio para buscar datos con IA.',
+    aiSuggestError: 'No se pudo obtener información con IA. Intenta de nuevo.',
+    aiSuggestTooltip: 'Buscar especificaciones técnicas reales en la web con IA',
     toastEnterDeviceName: 'Por favor escribe el nombre del dispositivo.',
     toastDeviceSaved: 'Dispositivo guardado con éxito.',
     toastDeviceDeleted: 'Dispositivo eliminado.',
@@ -1145,6 +1153,14 @@ export const translations = {
     ioSuccess: 'Import completed successfully!',
     
     // Toasts & General
+    aiSuggestBtn: 'AI Autofill',
+    aiSuggesting: 'Searching specs...',
+    aiSuggestSuccessDevice: 'Specifications found and applied!',
+    aiSuggestSuccessAccessory: 'Accessory details applied with AI!',
+    aiSuggestPromptDeviceName: 'Enter the device name first to search specifications with AI.',
+    aiSuggestPromptAccessoryName: 'Enter the accessory name first to search details with AI.',
+    aiSuggestError: 'Could not fetch web details with AI. Please try again.',
+    aiSuggestTooltip: 'Search real-world tech specifications on the web with AI',
     toastEnterDeviceName: 'Please enter a device name.',
     toastDeviceSaved: 'Device saved successfully.',
     toastDeviceDeleted: 'Device deleted.',
