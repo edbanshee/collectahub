@@ -3,7 +3,10 @@ import { Terminal, ChevronUp, ChevronDown, Trash2, Copy, Check, AlertTriangle, X
 import { useAuth } from '../../context/AuthContext';
 import { devLogger, LogEntry } from '../../utils/devLogger';
 
-const ALLOWED_ADMIN_EMAIL = 'theneonspartan@gmail.com';
+const ALLOWED_ADMIN_EMAILS = [
+  'theneonspartan@gmail.com',
+  'jsantoyo2297@gmail.com',
+];
 
 export const DevConsoleDrawer: React.FC = () => {
   const { user } = useAuth();
@@ -13,8 +16,9 @@ export const DevConsoleDrawer: React.FC = () => {
   const [copiedAll, setCopiedAll] = useState(false);
   const [filter, setFilter] = useState<'all' | 'error' | 'network'>('all');
 
-  // Strict access: Only visible for the designated admin email
-  const isAdmin = user?.email?.toLowerCase().trim() === ALLOWED_ADMIN_EMAIL;
+  // Strict access: Only visible for the designated admin emails
+  const userEmail = user?.email?.toLowerCase().trim() || '';
+  const isAdmin = ALLOWED_ADMIN_EMAILS.includes(userEmail);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -73,7 +77,7 @@ export const DevConsoleDrawer: React.FC = () => {
           <span className="font-bold text-slate-100 flex items-center gap-1.5 truncate">
             <span>Debug Console</span>
             <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-800">
-              {ALLOWED_ADMIN_EMAIL}
+              {userEmail}
             </span>
           </span>
 
