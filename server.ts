@@ -11,16 +11,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT) || 3000;
 
-// Initialize Google GenAI client with required header
-const apiKey = process.env.GEMINI_API_KEY || '';
-const ai = new GoogleGenAI({
-  apiKey,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
+// Helper to get GoogleGenAI client with current environment key
+function getAiClient() {
+  const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
     },
-  },
-});
+  });
+}
 
 // Helper to clean and parse JSON from Gemini text response
 function extractJsonFromText(text: string): any {
@@ -41,7 +43,7 @@ function extractJsonFromText(text: string): any {
 
 // Call Gemini with fallback between models in case of temporary 503 high demand
 async function generateWithGemini(contents: string, tools?: any[]) {
-  // Use fast gemini-3.1-flash-lite first, then fallback to gemini-3.8-flash
+  const ai = getAiClient();
   const models = ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
   let lastError: any = null;
 
@@ -63,8 +65,17 @@ async function generateWithGemini(contents: string, tools?: any[]) {
         return response.text;
       }
     } catch (err: any) {
-      console.warn(`Model ${model} failed:`, err?.message || err);
+      console.warn(`Model ${model} response:`, err?.message || err);
       lastError = err;
+      // If error is authentication-related (401), don't retry subsequent models
+      if (
+        err?.status === 401 ||
+        err?.message?.includes('401') ||
+        err?.message?.includes('UNAUTHENTICATED') ||
+        err?.message?.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED')
+      ) {
+        break;
+      }
     }
   }
 
@@ -126,7 +137,23 @@ Do NOT wrap the output in extra commentary or text outside the JSON. Return only
       const data = extractJsonFromText(text);
       return res.json({ success: true, data });
     } catch (err: any) {
-      console.error('Error in /api/gemini/suggest-device:', err);
+      const isAuthError =
+        err?.status === 401 ||
+        err?.message?.includes('401') ||
+        err?.message?.includes('UNAUTHENTICATED') ||
+        err?.message?.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED');
+
+      if (isAuthError) {
+        return res.status(401).json({
+          error: 'UNAUTHENTICATED',
+          message:
+            req.body?.language === 'es'
+              ? 'La clave de Gemini API no es válida o no tiene permisos en Google Cloud. Por favor selecciona una clave válida en el panel de Secretos.'
+              : 'Invalid Gemini API key or missing permissions in Google Cloud. Please configure a valid key in the Secrets panel.',
+        });
+      }
+
+      console.error('Error in /api/gemini/suggest-device:', err?.message || err);
       return res.status(500).json({
         error: err?.message || 'Failed to generate device suggestions',
       });
@@ -160,7 +187,23 @@ Do NOT wrap the output in extra commentary. Return only the raw JSON.`;
       const data = extractJsonFromText(text);
       return res.json({ success: true, data });
     } catch (err: any) {
-      console.error('Error in /api/gemini/suggest-accessory:', err);
+      const isAuthError =
+        err?.status === 401 ||
+        err?.message?.includes('401') ||
+        err?.message?.includes('UNAUTHENTICATED') ||
+        err?.message?.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED');
+
+      if (isAuthError) {
+        return res.status(401).json({
+          error: 'UNAUTHENTICATED',
+          message:
+            req.body?.language === 'es'
+              ? 'La clave de Gemini API no es válida o no tiene permisos en Google Cloud. Por favor selecciona una clave válida en el panel de Secretos.'
+              : 'Invalid Gemini API key or missing permissions in Google Cloud. Please configure a valid key in the Secrets panel.',
+        });
+      }
+
+      console.error('Error in /api/gemini/suggest-accessory:', err?.message || err);
       return res.status(500).json({
         error: err?.message || 'Failed to generate accessory suggestions',
       });

@@ -142,12 +142,23 @@ export const AccessoryModal: React.FC<AccessoryModalProps> = ({
               : 'Backend not found (GitHub Pages is static). Deploy the backend to Vercel or Render to enable AI.'
           );
         }
-        throw new Error('API request failed');
+        const errJson = await res.json().catch(() => null);
+        throw new Error(
+          errJson?.message ||
+            errJson?.error ||
+            (language === 'es'
+              ? 'No se pudo conectar con el servicio de IA. Verifica tu clave de Gemini.'
+              : 'Could not connect to AI service. Check your Gemini API key.')
+        );
       }
 
       const json = await res.json();
       if (!json.success || !json.data) {
-        throw new Error('No suggestions found');
+        throw new Error(
+          language === 'es'
+            ? 'No se encontraron especificaciones para este accesorio.'
+            : 'No specifications found for this accessory.'
+        );
       }
 
       const d = json.data;
@@ -180,8 +191,8 @@ export const AccessoryModal: React.FC<AccessoryModalProps> = ({
 
       showToast(t('aiSuggestSuccessAccessory'), 'success');
     } catch (err: any) {
-      console.error(err);
-      showToast(t('aiSuggestError'), 'error');
+      const msg = err?.message || t('aiSuggestError');
+      showToast(msg, 'error');
     } finally {
       setIsAiLoading(false);
     }
