@@ -25,10 +25,10 @@ import { WelcomeView } from './components/welcome/WelcomeView';
 import { AlertCircle, Trash2, X, ExternalLink, ShieldAlert } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
-  const { isLoading, deleteDrive, deleteAccessory } = useStorage();
+  const { isLoading, deleteDrive, deleteAccessory, quotaWarning, clearQuotaWarning } = useStorage();
   const { user, loading: authLoading, authError, clearAuthError } = useAuth();
   const { showToast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [activeView, setActiveView] = useState<ActiveView>('devices');
   const [guestModeEntered, setGuestModeEntered] = useState<boolean>(() => {
@@ -218,6 +218,47 @@ const MainAppContent: React.FC = () => {
                 type="button"
                 onClick={clearAuthError}
                 className="p-1.5 text-amber-700 dark:text-amber-400 hover:text-amber-950 dark:hover:text-amber-200 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Free Quota Notice Banner (Firestore / Storage / AI limits reached) */}
+        {quotaWarning && (
+          <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-indigo-950 dark:text-indigo-200">
+                  {language === 'es' ? 'Aviso de Límite de Cuota Gratuita' : 'Free Tier Limit Notice'}
+                </h4>
+                <p className="text-xs text-indigo-900/80 dark:text-indigo-200/90 mt-0.5 max-w-2xl leading-relaxed">
+                  {quotaWarning}
+                </p>
+                <p className="text-[11px] text-indigo-700/80 dark:text-indigo-300/70 mt-1">
+                  {language === 'es'
+                    ? 'Tus datos continúan seguros en tu navegador. Puedes exportar una copia de seguridad JSON cuando lo desees.'
+                    : 'Your data remains safe in your browser. You can export a JSON backup anytime.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+              <button
+                type="button"
+                onClick={() => setImportExportModalOpen(true)}
+                className="px-3 py-1.5 text-xs font-bold text-indigo-900 dark:text-indigo-100 bg-indigo-200/70 dark:bg-indigo-900/60 hover:bg-indigo-300 dark:hover:bg-indigo-800/80 rounded-xl transition-colors cursor-pointer"
+              >
+                {language === 'es' ? 'Exportar Copia JSON' : 'Export JSON Backup'}
+              </button>
+              <button
+                type="button"
+                onClick={clearQuotaWarning}
+                className="p-1.5 text-indigo-700 dark:text-indigo-400 hover:text-indigo-950 dark:hover:text-indigo-200 rounded-lg cursor-pointer"
+                title="Cerrar aviso"
               >
                 <X className="w-4 h-4" />
               </button>

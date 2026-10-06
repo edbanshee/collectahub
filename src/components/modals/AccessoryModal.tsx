@@ -12,8 +12,10 @@ import { Accessory } from '../../types';
 import { useStorage } from '../../context/StorageContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { DEFAULT_ACCESSORY_CATEGORIES } from '../../data/initialData';
 import { StarRatingInput } from '../common/StarRatingInput';
+import { ImageUploadInput } from '../common/ImageUploadInput';
 import { getSafeRating } from '../../utils/ratingColors';
 
 interface AccessoryModalProps {
@@ -32,6 +34,7 @@ export const AccessoryModal: React.FC<AccessoryModalProps> = ({
   const { devices, accessories, settings, saveAccessory, addOption } = useStorage();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
@@ -431,64 +434,14 @@ export const AccessoryModal: React.FC<AccessoryModalProps> = ({
             />
           </div>
 
-          {/* Image URL */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-[#d4d4d8]">
-                {t('accessoryFieldImageUrl')}
-              </label>
-              {imageUrl.length > 0 && (
-                <span className={`text-[10px] font-mono ${imageUrl.length >= 500 ? 'text-amber-500 font-bold' : 'text-slate-400 dark:text-[#71717a]'}`}>
-                  {imageUrl.length}/500
-                </span>
-              )}
-            </div>
-            <div className="relative">
-              <Image className="w-4 h-4 absolute left-3 top-3 text-slate-400 dark:text-[#71717a]" />
-              <input
-                type="text"
-                maxLength={500}
-                value={imageUrl}
-                onChange={(e) => {
-                  setImageUrl(e.target.value);
-                  setImgError(false);
-                }}
-                placeholder={t('accessoryFieldImageUrlPlaceholder')}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#202024] border border-slate-300 dark:border-[#27272b] rounded-xl text-sm text-slate-900 dark:text-[#f4f4f5] focus:ring-2 focus:ring-purple-500 focus:outline-none"
-              />
-            </div>
-
-            {/* Preview */}
-            {normalizedImageUrl && (
-              <div className="mt-2.5 p-3 rounded-xl border border-slate-200 dark:border-[#27272b] bg-slate-50/50 dark:bg-[#202024]/60">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-900 border border-slate-300 dark:border-[#333338] shrink-0">
-                    <img
-                      src={normalizedImageUrl}
-                      alt={name || 'Accessory'}
-                      className={`w-full h-full object-cover transition-opacity ${
-                        imgError ? 'opacity-20' : 'opacity-100'
-                      }`}
-                      onError={() => setImgError(true)}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {imgError ? (
-                      <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-xs">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>No se pudo cargar la imagen</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs">
-                        <Check className="w-4 h-4 shrink-0" />
-                        <span>Vista previa disponible</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Image Upload / URL with Cloudinary integration */}
+          <ImageUploadInput
+            value={imageUrl}
+            onChange={setImageUrl}
+            userId={user?.uid}
+            entityType="accessories"
+            entityName={name}
+          />
 
           {/* Tags */}
           <div>

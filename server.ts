@@ -4,12 +4,33 @@ import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
+import { v2 as cloudinary } from 'cloudinary';
 
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT) || 3000;
+
+// Cloudinary client helper
+function getCloudinary() {
+  const cloud_name = process.env.CLOUDINARY_CLOUD_NAME;
+  const api_key = process.env.CLOUDINARY_API_KEY;
+  const api_secret = process.env.CLOUDINARY_API_SECRET;
+
+  if (!cloud_name || !api_key || !api_secret) {
+    return null;
+  }
+
+  cloudinary.config({
+    cloud_name,
+    api_key,
+    api_secret,
+    secure: true,
+  });
+
+  return cloudinary;
+}
 
 // Helper to get GoogleGenAI client with current environment key
 function getAiClient() {
@@ -84,7 +105,7 @@ async function generateWithGemini(contents: string, tools?: any[]) {
 
 async function startServer() {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '15mb' }));
 
   // CORS headers to allow GitHub Pages or any client origin to call the API
   app.use((req, res, next) => {
@@ -207,6 +228,101 @@ Do NOT wrap the output in extra commentary. Return only the raw JSON.`;
       return res.status(500).json({
         error: err?.message || 'Failed to generate accessory suggestions',
       });
+    }
+  });
+
+  // API Route: Cloudinary secure image upload
+  app.post('/api/cloudinary/upload', async (req, res) => {
+    try {
+      const cld = getCloudinary();
+      if (!cld) {
+        return res.status(503).json({
+          error: 'CLOUDINARY_NOT_CONFIGURED',
+          message:
+            'Cloudinary no está configurado. Por favor agrega CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET en Render.',
+        });
+      }
+
+      const { image, userId, entityType = 'devices', publicId } = req.body;
+      if (!image || typeof image !== 'string') {
+        return res.status(400).json({ error: 'Image data (base64 or URL) is required' });
+      }
+
+      const cleanUserId =
+        userId && typeof userId === 'string'
+          ? userId.replace(/[^a-zA-Z0-9_-]/g, '_')
+          : 'anonymous';
+      const cleanType =
+        entityType && typeof entityType === 'string'
+          ? entityType.replace(/[^a-zA-Z0-9_-]/g, '_')
+          : 'devices';
+
+      const folder = `collectahub/users/${cleanUserId}/${cleanType}`;
+
+      const uploadOptions: any = {
+        folder,
+        overwrite: true,
+        resource_type: 'image',
+        transformation: [
+          { width: 1280, height: 1280, crop: 'limit' },
+          { quality: 'auto:good' },
+          { fetch_format: 'auto' },
+        ],
+      };
+
+      if (publicId && typeof publicId === 'string' && publicId.includes(cleanUserId)) {
+        uploadOptions.public_id = publicId.split('/').pop();
+      }
+
+      const result = await cld.uploader.upload(image, uploadOptions);
+
+      return res.json({
+        success: true,
+        url: result.secure_url,
+        publicId: result.public_id,
+        width: result.width,
+        height: result.height,
+        format: result.format,
+        bytes: result.bytes,
+      });
+    } catch (err: any) {
+      console.error('Error in /api/cloudinary/upload:', err?.message || err);
+      return res.status(500).json({
+        error: 'UPLOAD_FAILED',
+        message: err?.message || 'Error al subir la imagen a Cloudinary',
+      });
+    }
+  });
+
+  // API Route: Cloudinary secure image delete
+  app.post('/api/cloudinary/delete', async (req, res) => {
+    try {
+      const cld = getCloudinary();
+      if (!cld) {
+        return res.status(503).json({ error: 'CLOUDINARY_NOT_CONFIGURED' });
+      }
+
+      const { publicId, userId } = req.body;
+      if (!publicId || typeof publicId !== 'string') {
+        return res.status(400).json({ error: 'publicId is required' });
+      }
+
+      // Ensure user can only delete within their own folder
+      if (userId && typeof userId === 'string') {
+        const cleanUserId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
+        if (!publicId.includes(`users/${cleanUserId}/`)) {
+          return res.status(403).json({
+            error: 'FORBIDDEN',
+            message: 'No tienes permiso para borrar esta imagen',
+          });
+        }
+      }
+
+      const result = await cld.uploader.destroy(publicId);
+      return res.json({ success: true, result });
+    } catch (err: any) {
+      console.error('Error in /api/cloudinary/delete:', err?.message || err);
+      return res.status(500).json({ error: 'DELETE_FAILED', message: err?.message });
     }
   });
 

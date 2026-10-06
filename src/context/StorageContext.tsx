@@ -56,6 +56,17 @@ enum OperationType {
   WRITE = 'write',
 }
 
+export function checkIsQuotaExceeded(error: unknown): boolean {
+  if (!error) return false;
+  const str = error instanceof Error ? error.message : String(error);
+  return (
+    str.includes('Quota exceeded') ||
+    str.includes('resource-exhausted') ||
+    str.includes('Free daily read units') ||
+    str.includes('quota metric')
+  );
+}
+
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo = {
     error: error instanceof Error ? error.message : String(error),
@@ -118,6 +129,10 @@ interface StorageContextType {
   // Import & Export
   exportBackup: () => StorageExportData;
   importBackup: (data: StorageExportData, mode: 'merge' | 'replace') => Promise<{ addedDevices: number; addedDrives: number; addedAccessories: number; newOptions: number }>;
+  
+  // Quota & Free Tier Warnings
+  quotaWarning: string | null;
+  clearQuotaWarning: () => void;
 }
 
 const StorageContext = createContext<StorageContextType | undefined>(undefined);
@@ -221,6 +236,9 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [settings, setSettings] = useState<UserSettings>(INITIAL_SETTINGS);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('local');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [quotaWarning, setQuotaWarning] = useState<string | null>(null);
+
+  const clearQuotaWarning = () => setQuotaWarning(null);
 
   // Cloud Onboarding state
   const [showOnboardingModal, setShowOnboardingModal] = useState<boolean>(false);
@@ -1701,6 +1719,8 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         atomicWipe,
         exportBackup,
         importBackup,
+        quotaWarning,
+        clearQuotaWarning,
       }}
     >
       {children}
