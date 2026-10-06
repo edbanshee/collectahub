@@ -36,6 +36,17 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
     : '';
 
   const handleFileProcess = async (file: File) => {
+    if (!userId || userId === 'anonymous') {
+      showToast(
+        language === 'es'
+          ? 'Para subir fotos a la nube debes iniciar sesión con Google. Como invitado, puedes pegar enlaces en la pestaña "URL".'
+          : 'Please sign in with Google to upload images to the cloud. As a guest, you can paste links in the "URL" tab.',
+        'info'
+      );
+      setMode('url');
+      return;
+    }
+
     if (!file.type.startsWith('image/')) {
       showToast(
         language === 'es'
@@ -46,12 +57,12 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
       return;
     }
 
-    // Limit to 10MB client-side check
-    if (file.size > 10 * 1024 * 1024) {
+    // Limit to 6MB client-side check
+    if (file.size > 6 * 1024 * 1024) {
       showToast(
         language === 'es'
-          ? 'La imagen es muy pesada (máximo 10 MB).'
-          : 'The image is too large (maximum 10 MB).',
+          ? 'La imagen es muy pesada (máximo 6 MB).'
+          : 'The image is too large (maximum 6 MB).',
         'warning'
       );
       return;
@@ -76,13 +87,18 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image: base64Data,
-          userId: userId || 'anonymous',
+          userId,
           entityType,
+          language,
         }),
       });
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => null);
+        if (response.status === 429) {
+          // If quota or rate limit exceeded, advise URL mode
+          setMode('url');
+        }
         throw new Error(
           errJson?.message ||
             (language === 'es'

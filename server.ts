@@ -103,6 +103,96 @@ async function generateWithGemini(contents: string, tools?: any[]) {
   throw lastError || new Error('All Gemini models failed');
 }
 
+// In-memory sliding window rate limiter for image uploads (max 15 uploads per hour per user)
+const userUploadTimestamps = new Map<string, number[]>();
+
+function checkUserUploadRateLimit(userId: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const ONE_HOUR = 60 * 60 * 1000;
+  const history = userUploadTimestamps.get(userId) || [];
+  const recent = history.filter((t) => now - t < ONE_HOUR);
+
+  if (recent.length >= 15) {
+    userUploadTimestamps.set(userId, recent);
+    return { allowed: false, remaining: 0 };
+  }
+
+  recent.push(now);
+  userUploadTimestamps.set(userId, recent);
+  return { allowed: true, remaining: 15 - recent.length };
+}
+
+// Automated content moderation with Gemini Vision before touching Cloudinary
+async function checkImageSafety(
+  imageData: string
+): Promise<{ safe: boolean; reason?: string }> {
+  try {
+    if (!imageData.startsWith('data:image/')) {
+      return { safe: true };
+    }
+
+    const ai = getAiClient();
+    const mimeMatch = imageData.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const base64Data = imageData.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '');
+
+    // Skip evaluation for tiny thumbnails/icons (< 2KB)
+    if (base64Data.length < 2500) {
+      return { safe: true };
+    }
+
+    const prompt = `You are a strict automated safety filter for a tech hardware & video game catalog app.
+Determine whether this image violates safety standards.
+Violation categories:
+- Explicit pornography, nudity, or sexually explicit acts (NSFW)
+- Extreme graphic violence, gore, or bloodshed
+- Illegal drugs or hate symbols
+
+Respond ONLY in strict JSON format:
+{
+  "safe": true/false,
+  "reason": "Brief explanation if unsafe, otherwise empty"
+}`;
+
+    const models = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
+    for (const model of models) {
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Moderation timeout')), 7000)
+        );
+
+        const callPromise = ai.models.generateContent({
+          model,
+          contents: [
+            prompt,
+            {
+              inlineData: {
+                mimeType,
+                data: base64Data,
+              },
+            },
+          ],
+        });
+
+        const resp = await Promise.race([callPromise, timeoutPromise]);
+        const text = resp.text || '';
+        const parsed = extractJsonFromText(text);
+        if (parsed && typeof parsed.safe === 'boolean') {
+          return parsed;
+        }
+      } catch (mErr: any) {
+        // Try next model if timeout or rate-limited
+      }
+    }
+
+    // Default safe if moderation service is temporarily busy
+    return { safe: true };
+  } catch (err: any) {
+    console.warn('Image safety check warning:', err?.message || err);
+    return { safe: true };
+  }
+}
+
 async function startServer() {
   const app = express();
   app.use(express.json({ limit: '15mb' }));
@@ -174,6 +264,22 @@ Do NOT wrap the output in extra commentary or text outside the JSON. Return only
         });
       }
 
+      const isQuotaError =
+        err?.status === 429 ||
+        err?.message?.includes('429') ||
+        err?.message?.includes('RESOURCE_EXHAUSTED') ||
+        err?.message?.includes('Quota exceeded');
+
+      if (isQuotaError) {
+        return res.status(429).json({
+          error: 'QUOTA_EXCEEDED',
+          message:
+            req.body?.language === 'es'
+              ? 'Has alcanzado temporalmente el límite gratuito de consultas de IA (Gemini). Puedes continuar registrando los datos manualmente sin problema.'
+              : 'Gemini AI free rate limit reached for this period. You can continue filling in the details manually without interruption.',
+        });
+      }
+
       console.error('Error in /api/gemini/suggest-device:', err?.message || err);
       return res.status(500).json({
         error: err?.message || 'Failed to generate device suggestions',
@@ -224,6 +330,22 @@ Do NOT wrap the output in extra commentary. Return only the raw JSON.`;
         });
       }
 
+      const isQuotaError =
+        err?.status === 429 ||
+        err?.message?.includes('429') ||
+        err?.message?.includes('RESOURCE_EXHAUSTED') ||
+        err?.message?.includes('Quota exceeded');
+
+      if (isQuotaError) {
+        return res.status(429).json({
+          error: 'QUOTA_EXCEEDED',
+          message:
+            req.body?.language === 'es'
+              ? 'Has alcanzado temporalmente el límite gratuito de consultas de IA (Gemini). Puedes continuar registrando los datos manualmente sin problema.'
+              : 'Gemini AI free rate limit reached for this period. You can continue filling in the details manually without interruption.',
+        });
+      }
+
       console.error('Error in /api/gemini/suggest-accessory:', err?.message || err);
       return res.status(500).json({
         error: err?.message || 'Failed to generate accessory suggestions',
@@ -231,7 +353,7 @@ Do NOT wrap the output in extra commentary. Return only the raw JSON.`;
     }
   });
 
-  // API Route: Cloudinary secure image upload
+  // API Route: Cloudinary secure image upload with 3 safety layers
   app.post('/api/cloudinary/upload', async (req, res) => {
     try {
       const cld = getCloudinary();
@@ -243,15 +365,65 @@ Do NOT wrap the output in extra commentary. Return only the raw JSON.`;
         });
       }
 
-      const { image, userId, entityType = 'devices', publicId } = req.body;
+      const { image, userId, entityType = 'devices', publicId, language = 'es' } = req.body;
       if (!image || typeof image !== 'string') {
         return res.status(400).json({ error: 'Image data (base64 or URL) is required' });
       }
 
-      const cleanUserId =
-        userId && typeof userId === 'string'
-          ? userId.replace(/[^a-zA-Z0-9_-]/g, '_')
-          : 'anonymous';
+      // Layer 2: Authentication requirement (only signed-in users can upload to Cloudinary)
+      if (
+        !userId ||
+        typeof userId !== 'string' ||
+        userId.trim() === '' ||
+        userId === 'anonymous' ||
+        userId.length < 5
+      ) {
+        return res.status(401).json({
+          error: 'AUTH_REQUIRED',
+          message:
+            language === 'en'
+              ? 'You must sign in with Google to upload photos to cloud storage. You can still paste image URLs.'
+              : 'Debes iniciar sesión con Google para subir fotos a la nube. Puedes seguir usando enlaces URL directos.',
+        });
+      }
+
+      const cleanUserId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+      // Layer 3A: Rate limiting (max 15 uploads per hour per user)
+      const rateCheck = checkUserUploadRateLimit(cleanUserId);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({
+          error: 'RATE_LIMIT_EXCEEDED',
+          message:
+            language === 'en'
+              ? 'Rate limit reached: Maximum 15 uploads per hour per user. You can still use direct image URLs.'
+              : 'Límite de subidas alcanzado: Máximo 15 imágenes por hora por usuario. Puedes seguir usando enlaces URL directos.',
+        });
+      }
+
+      // Layer 3B: Size limit (max ~6MB base64)
+      if (image.length > 8.5 * 1024 * 1024) {
+        return res.status(413).json({
+          error: 'FILE_TOO_LARGE',
+          message:
+            language === 'en'
+              ? 'The image exceeds the 6 MB limit. Please select a smaller photo.'
+              : 'La imagen excede el límite de 6 MB. Por favor elige una foto más liviana.',
+        });
+      }
+
+      // Layer 1: Automated Gemini Vision Content Safety Check (pre-filter before Cloudinary)
+      const safety = await checkImageSafety(image);
+      if (!safety.safe) {
+        return res.status(400).json({
+          error: 'IMAGE_REJECTED_NSFW',
+          message:
+            language === 'en'
+              ? `Upload rejected by safety filter: ${safety.reason || 'Inappropriate or explicit content detected'}.`
+              : `Imagen rechazada por el filtro de seguridad: ${safety.reason || 'Se detectó contenido inapropiado o explícito'}.`,
+        });
+      }
+
       const cleanType =
         entityType && typeof entityType === 'string'
           ? entityType.replace(/[^a-zA-Z0-9_-]/g, '_')
@@ -287,6 +459,22 @@ Do NOT wrap the output in extra commentary. Return only the raw JSON.`;
       });
     } catch (err: any) {
       console.error('Error in /api/cloudinary/upload:', err?.message || err);
+
+      const isCloudinaryQuota =
+        err?.http_code === 420 ||
+        err?.message?.includes('Resource limit exceeded') ||
+        err?.message?.includes('quota');
+
+      if (isCloudinaryQuota) {
+        return res.status(429).json({
+          error: 'CLOUDINARY_QUOTA_EXCEEDED',
+          message:
+            req.body?.language === 'en'
+              ? 'Monthly free cloud storage quota reached on Cloudinary. You can continue adding images via direct web URLs.'
+              : 'Se ha alcanzado la cuota mensual de almacenamiento gratuito en Cloudinary. Puedes seguir añadiendo fotos mediante enlaces URL de internet.',
+        });
+      }
+
       return res.status(500).json({
         error: 'UPLOAD_FAILED',
         message: err?.message || 'Error al subir la imagen a Cloudinary',

@@ -28,6 +28,7 @@ import {
 } from '../data/initialData';
 import { cleanFirestoreData } from '../utils/cleanFirestoreData';
 import { getSafeRating } from '../utils/ratingColors';
+import { deleteCloudinaryImage } from '../utils/cloudinary';
 
 // Storage keys for guest isolation
 const GUEST_DEVICES_KEY = 'storage_tracker_guest_devices';
@@ -67,6 +68,8 @@ export function checkIsQuotaExceeded(error: unknown): boolean {
   );
 }
 
+let globalQuotaSetter: ((msg: string | null) => void) | null = null;
+
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo = {
     error: error instanceof Error ? error.message : String(error),
@@ -74,6 +77,12 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path,
   };
   console.error('Firestore Error:', JSON.stringify(errInfo));
+
+  if (checkIsQuotaExceeded(error) && globalQuotaSetter) {
+    globalQuotaSetter(
+      'Se ha alcanzado la cuota diaria gratuita de Google Cloud Firestore (lecturas/escrituras). Tus datos actuales continúan guardados localmente en tu navegador.'
+    );
+  }
 }
 
 export type SyncStatus = 'local' | 'syncing' | 'synced' | 'error';
@@ -239,6 +248,13 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [quotaWarning, setQuotaWarning] = useState<string | null>(null);
 
   const clearQuotaWarning = () => setQuotaWarning(null);
+
+  useEffect(() => {
+    globalQuotaSetter = setQuotaWarning;
+    return () => {
+      globalQuotaSetter = null;
+    };
+  }, []);
 
   // Cloud Onboarding state
   const [showOnboardingModal, setShowOnboardingModal] = useState<boolean>(false);
@@ -590,8 +606,12 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const devRef = doc(db, 'users', user.uid, 'devices', id);
       await setDoc(devRef, sanitized);
 
-      // If name changed, update drives and accessories in Firestore batch
+      // If old device had a Cloudinary image that was replaced or removed, delete it
       const oldDev = devices.find((d) => d.id === id);
+      if (oldDev?.imageUrl && oldDev.imageUrl !== deviceData.imageUrl) {
+        deleteCloudinaryImage(oldDev.imageUrl, user.uid);
+      }
+
       if (oldDev && oldDev.name !== deviceData.name) {
         const affectedDrives = drives.filter((dr) => dr.device === oldDev.name);
         const affectedAccs = accessories.filter((acc) => acc.device === oldDev.name);
@@ -647,6 +667,11 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setDrives(updatedDrives);
       setAccessories(updatedAccessories);
       persistGuest(updatedDevices, updatedDrives, updatedAccessories);
+
+      // Clean up Cloudinary image for guest if any
+      if (target.imageUrl) {
+        deleteCloudinaryImage(target.imageUrl, 'anonymous');
+      }
       return;
     }
 
@@ -692,6 +717,18 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       await batch.commit();
       setSyncStatus('synced');
+
+      // Auto-delete Cloudinary images associated with deleted device & cascaded accessories
+      if (target.imageUrl) {
+        deleteCloudinaryImage(target.imageUrl, user.uid);
+      }
+      if (cascadeAccessories && targetAccs.length > 0) {
+        targetAccs.forEach((acc) => {
+          if (acc.imageUrl) {
+            deleteCloudinaryImage(acc.imageUrl, user.uid);
+          }
+        });
+      }
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/devices/${deviceId}`);
       setSyncStatus('error');
@@ -735,6 +772,12 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const sanitized = cleanFirestoreData(accessoryData);
       const accRef = doc(db, 'users', user.uid, 'accessories', id);
       await setDoc(accRef, sanitized);
+      // If old accessory had a Cloudinary image that was replaced or removed, delete it
+      const oldAcc = accessories.find((a) => a.id === id);
+      if (oldAcc?.imageUrl && oldAcc.imageUrl !== accessoryData.imageUrl) {
+        deleteCloudinaryImage(oldAcc.imageUrl, user.uid);
+      }
+
       setSyncStatus('synced');
     } catch (err) {
       handleFirestoreError(err, isEdit ? OperationType.UPDATE : OperationType.CREATE, `users/${user.uid}/accessories/${id}`);
@@ -744,10 +787,15 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteAccessory = async (accessoryId: string) => {
+    const target = accessories.find((a) => a.id === accessoryId);
+
     if (!user) {
       const updated = accessories.filter((a) => a.id !== accessoryId);
       setAccessories(updated);
       persistGuest(devices, drives, updated);
+      if (target?.imageUrl) {
+        deleteCloudinaryImage(target.imageUrl, 'anonymous');
+      }
       return;
     }
 
@@ -755,6 +803,10 @@ export const StorageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setSyncStatus('syncing');
       await deleteDoc(doc(db, 'users', user.uid, 'accessories', accessoryId));
       setSyncStatus('synced');
+
+      if (target?.imageUrl) {
+        deleteCloudinaryImage(target.imageUrl, user.uid);
+      }
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/accessories/${accessoryId}`);
       setSyncStatus('error');

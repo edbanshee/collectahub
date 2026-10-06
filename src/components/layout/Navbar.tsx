@@ -13,6 +13,7 @@ import {
   LogOut,
   Cloud,
   CloudCheck,
+  Info,
 } from 'lucide-react';
 import { ActiveView } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -28,6 +29,7 @@ interface NavbarProps {
   onOpenSettings: () => void;
   onOpenImportExport: () => void;
   onOpenAtomicWipe: () => void;
+  onOpenPortfolioInfo: () => void;
   onExitGuest?: () => void;
 }
 
@@ -39,6 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSettings,
   onOpenImportExport,
   onOpenAtomicWipe,
+  onOpenPortfolioInfo,
   onExitGuest,
 }) => {
   const { user, isSigningIn, signInWithGoogle, signOut } = useAuth();
@@ -285,6 +288,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="w-8 h-8 flex items-center justify-center text-rose-500 hover:text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl border border-rose-200 dark:border-rose-900/60 transition-colors"
             >
               <ShieldAlert className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Portfolio Architecture & Limits Info Button */}
+            <button
+              type="button"
+              onClick={onOpenPortfolioInfo}
+              title={language === 'es' ? 'Arquitectura y límites de uso libre' : 'Architecture & free-tier limits'}
+              aria-label="Info"
+              className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-[#a1a1aa] hover:text-purple-600 dark:hover:text-purple-400 bg-slate-100 dark:bg-[#18181c] hover:bg-slate-200 dark:hover:bg-[#222226] rounded-xl border border-slate-200 dark:border-[#27272b] transition-colors"
+            >
+              <Info className="w-4 h-4" />
             </button>
 
             {/* Theme Toggle (Sun / Moon) */}
