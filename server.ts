@@ -218,7 +218,7 @@ Do NOT wrap the output in extra commentary. Return only the raw JSON.`;
   // Mount Vite in development or static in production
   if (!isProduction) {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: 'spa',
     });
     app.use(vite.middlewares);
