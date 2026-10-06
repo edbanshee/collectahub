@@ -44,7 +44,7 @@ function extractJsonFromText(text: string): any {
 // Call Gemini with fallback between models in case of temporary 503 high demand
 async function generateWithGemini(contents: string, tools?: any[]) {
   const ai = getAiClient();
-  const models = ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+  const models = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
   let lastError: any = null;
 
   for (const model of models) {
