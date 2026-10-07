@@ -14,6 +14,7 @@ import {
   Cloud,
   CloudCheck,
   Info,
+  Terminal,
 } from 'lucide-react';
 import { ActiveView } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -30,6 +31,7 @@ interface NavbarProps {
   onOpenImportExport: () => void;
   onOpenAtomicWipe: () => void;
   onOpenPortfolioInfo: () => void;
+  onOpenDiagnostic: () => void;
   onExitGuest?: () => void;
 }
 
@@ -42,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenImportExport,
   onOpenAtomicWipe,
   onOpenPortfolioInfo,
+  onOpenDiagnostic,
   onExitGuest,
 }) => {
   const { user, isSigningIn, signInWithGoogle, signOut } = useAuth();
@@ -299,6 +302,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-[#a1a1aa] hover:text-purple-600 dark:hover:text-purple-400 bg-slate-100 dark:bg-[#18181c] hover:bg-slate-200 dark:hover:bg-[#222226] rounded-xl border border-slate-200 dark:border-[#27272b] transition-colors"
             >
               <Info className="w-4 h-4" />
+            </button>
+
+            {/* Diagnostic Console Button */}
+            <button
+              type="button"
+              onClick={onOpenDiagnostic}
+              title={language === 'es' ? 'Consola de diagnóstico y estado' : 'Diagnostic console & system status'}
+              aria-label="Diagnostic"
+              className="w-8 h-8 flex items-center justify-center text-slate-600 dark:text-[#a1a1aa] hover:text-emerald-500 dark:hover:text-emerald-400 bg-slate-100 dark:bg-[#18181c] hover:bg-slate-200 dark:hover:bg-[#222226] rounded-xl border border-slate-200 dark:border-[#27272b] transition-colors"
+            >
+              <Terminal className="w-4 h-4" />
             </button>
 
             {/* Theme Toggle (Sun / Moon) */}

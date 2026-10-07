@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { UploadCloud, Link as LinkIcon, X, Loader2, Image as ImageIcon, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
+import { devLogger } from '../../utils/devLogger';
 
 interface ImageUploadInputProps {
   value: string;
@@ -95,6 +96,7 @@ export const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => null);
+        devLogger.logNetwork('POST', `${apiBase}/api/cloudinary/upload`, response.status, errJson);
         if (response.status === 429) {
           // If quota or rate limit exceeded, advise URL mode
           setMode('url');

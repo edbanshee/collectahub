@@ -1,10 +1,12 @@
 {
   "projectId": "devices-hub-12a3d",
-  "appId": "1:1088346748392:web:668a9552a8baa07481205d",
+  "appId": "1:1088346748392:web:2e97c6f47bb5051b81205d",
   "apiKey": "AIzaSyCBCoId34TMBoqU6l2DjX4uKaCBfELXYnQ",
-  "authDomain": "auth.oceiros.com",
-  "firestoreDatabaseId": "(default)",
+  "authDomain": "devices-hub-12a3d.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-ede45444-d57e-4fb1-ac28-fec6d8252284",
   "storageBucket": "devices-hub-12a3d.firebasestorage.app",
   "messagingSenderId": "1088346748392",
-  "measurementId": "G-8VRFYDV4LS"
+  "measurementId": "",
+  "oAuthClientId": "1088346748392-55m7lkpf47t4jut9uoc2pidf00su1gbv.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
 }

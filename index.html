@@ -15,8 +15,18 @@
     <script>
       // Suppress Vite dev server WebSocket disconnect errors in iframe preview
       window.addEventListener('unhandledrejection', function (e) {
-        if (e.reason && (e.reason.message || '').includes('WebSocket')) {
+        var reason = e.reason;
+        var str = (reason && (reason.message || reason.stack || String(reason))) || '';
+        if (str.toLowerCase().includes('websocket') || str.includes('failed to connect to websocket')) {
           e.preventDefault();
+          e.stopImmediatePropagation?.();
+        }
+      });
+      window.addEventListener('error', function (e) {
+        var str = (e.message || (e.error && e.error.message) || String(e)) || '';
+        if (str.toLowerCase().includes('websocket') || str.includes('failed to connect to websocket')) {
+          e.preventDefault();
+          e.stopImmediatePropagation?.();
         }
       });
     </script>
