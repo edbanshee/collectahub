@@ -22,7 +22,6 @@ import { AtomicWipeModal } from './components/modals/AtomicWipeModal';
 import { CloudOnboardingModal } from './components/modals/CloudOnboardingModal';
 import { DeviceDeleteConfirmModal } from './components/modals/DeviceDeleteConfirmModal';
 import { PortfolioInfoModal } from './components/modals/PortfolioInfoModal';
-import { DevConsoleDrawer } from './components/common/DevConsoleDrawer';
 import { WelcomeView } from './components/welcome/WelcomeView';
 import { AlertCircle, Trash2, X, ExternalLink, ShieldAlert } from 'lucide-react';
 
@@ -549,9 +548,6 @@ const MainAppContent: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Admin Developer Console Drawer (Strictly restricted to theneonspartan@gmail.com) */}
-      <DevConsoleDrawer />
     </div>
   );
 };
