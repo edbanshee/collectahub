@@ -22,7 +22,6 @@ import { AtomicWipeModal } from './components/modals/AtomicWipeModal';
 import { CloudOnboardingModal } from './components/modals/CloudOnboardingModal';
 import { DeviceDeleteConfirmModal } from './components/modals/DeviceDeleteConfirmModal';
 import { PortfolioInfoModal } from './components/modals/PortfolioInfoModal';
-import { DiagnosticConsoleModal } from './components/modals/DiagnosticConsoleModal';
 import { WelcomeView } from './components/welcome/WelcomeView';
 import { AlertCircle, Trash2, X, ExternalLink, ShieldAlert } from 'lucide-react';
 
@@ -101,7 +100,6 @@ const MainAppContent: React.FC = () => {
   const [importExportModalOpen, setImportExportModalOpen] = useState(false);
   const [atomicWipeModalOpen, setAtomicWipeModalOpen] = useState(false);
   const [portfolioInfoModalOpen, setPortfolioInfoModalOpen] = useState(false);
-  const [diagnosticConsoleOpen, setDiagnosticConsoleOpen] = useState(false);
   const [matrixTargetDeviceId, setMatrixTargetDeviceId] = useState<string | null>(null);
 
   const handleNavigateToMatrix = (deviceId?: string) => {
@@ -172,7 +170,6 @@ const MainAppContent: React.FC = () => {
         onOpenImportExport={() => setImportExportModalOpen(true)}
         onOpenAtomicWipe={() => setAtomicWipeModalOpen(true)}
         onOpenPortfolioInfo={() => setPortfolioInfoModalOpen(true)}
-        onOpenDiagnostic={() => setDiagnosticConsoleOpen(true)}
         onExitGuest={handleExitGuest}
       />
 
@@ -446,11 +443,6 @@ const MainAppContent: React.FC = () => {
       <PortfolioInfoModal
         isOpen={portfolioInfoModalOpen}
         onClose={() => setPortfolioInfoModalOpen(false)}
-      />
-
-      <DiagnosticConsoleModal
-        isOpen={diagnosticConsoleOpen}
-        onClose={() => setDiagnosticConsoleOpen(false)}
       />
 
       {/* Simple Drive Delete Confirmation Modal */}

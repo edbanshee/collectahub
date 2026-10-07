@@ -13,101 +13,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
-      window.__BOOT_LOGS__ = [];
-      function pushBootLog(level, msg) {
-        var time = new Date().toTimeString().split(' ')[0];
-        var text = '[' + time + '] ' + level.toUpperCase() + ': ' + msg;
-        window.__BOOT_LOGS__.push(text);
-        var el = document.getElementById('boot-debug-console');
-        if (el) {
-          el.textContent = window.__BOOT_LOGS__.join('\n');
-          el.scrollTop = el.scrollHeight;
-        }
-      }
-
-      pushBootLog('info', 'HTML parser loaded. Waiting for JavaScript bundle...');
-
       // Suppress Vite dev server WebSocket disconnect errors in iframe preview
       window.addEventListener('unhandledrejection', function (e) {
-        var reasonStr = String(e.reason?.message || e.reason || '');
-        if (reasonStr.includes('WebSocket')) {
-          return;
+        if (e.reason && (e.reason.message || '').includes('WebSocket')) {
+          e.preventDefault();
         }
-        pushBootLog('error', 'Unhandled Rejection: ' + reasonStr);
-        var statusEl = document.getElementById('boot-status-text');
-        var card = document.getElementById('boot-debug-card');
-        if (statusEl) {
-          statusEl.style.color = '#fb7185';
-          statusEl.textContent = 'Error: ' + reasonStr;
-        }
-        if (card) card.style.display = 'block';
       });
-
-      // Catch asset load errors or fatal bootstrap failures (capture phase for <script> 404s)
-      window.addEventListener('error', function (e) {
-        var target = e.target;
-        var msg = e.message;
-        if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
-          msg = 'No se pudo cargar el archivo: ' + (target.src || target.href || target.tagName);
-        }
-        pushBootLog('error', msg || 'Error desconocido');
-        var statusEl = document.getElementById('boot-status-text');
-        var card = document.getElementById('boot-debug-card');
-        if (statusEl) {
-          statusEl.style.color = '#fb7185';
-          statusEl.textContent = msg;
-        }
-        if (card) card.style.display = 'block';
-      }, true);
-
-      // Auto-reveal diagnostic console if React hasn't replaced #root after 2.5s
-      setTimeout(function () {
-        var loader = document.getElementById('app-boot-loader');
-        if (loader) {
-          pushBootLog('warn', 'Inicialización lenta o bloqueo en JavaScript. Diagnóstico disponible.');
-          var card = document.getElementById('boot-debug-card');
-          if (card) card.style.display = 'block';
-        }
-      }, 2500);
     </script>
   </head>
   <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen antialiased selection:bg-indigo-500 selection:text-white transition-colors duration-200">
-    <div id="root">
-      <div id="app-boot-loader" style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, -apple-system, sans-serif; background: #0e0e10; color: #f4f4f5; text-align: center; padding: 24px; box-sizing: border-box;">
-        <div style="width: 52px; height: 52px; border-radius: 16px; background: linear-gradient(135deg, #9333ea, #4f46e5); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; box-shadow: 0 10px 25px -5px rgba(147, 51, 234, 0.4);">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="16" height="16" x="4" y="4" rx="2"></rect>
-            <rect width="6" height="6" x="9" y="9" rx="1"></rect>
-            <path d="M15 2v2"></path>
-            <path d="M15 20v2"></path>
-            <path d="M2 15h2"></path>
-            <path d="M2 9h2"></path>
-            <path d="M20 15h2"></path>
-            <path d="M20 9h2"></path>
-            <path d="M9 2v2"></path>
-            <path d="M9 20v2"></path>
-          </svg>
-        </div>
-        <h1 style="font-size: 20px; font-weight: 800; margin: 0 0 6px 0; letter-spacing: -0.025em;">CollectaHub</h1>
-        <p id="boot-status-text" style="font-size: 13px; color: #a1a1aa; margin: 0 0 16px 0; max-width: 480px; line-height: 1.5;">Iniciando aplicación...</p>
-
-        <!-- Live Diagnostic Card (Appears if load takes >2.5s or on error) -->
-        <div id="boot-debug-card" style="display: none; width: 100%; max-width: 560px; background: #18181c; border: 1px solid #27272b; border-radius: 12px; padding: 16px; text-align: left; margin-top: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 11px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.05em;">Consola de Diagnóstico de Arranque</span>
-            <button onclick="window.location.reload(true)" style="background: #27272b; color: #f4f4f5; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">Recargar</button>
-          </div>
-          <pre id="boot-debug-console" style="background: #09090b; border: 1px solid #27272a; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; color: #a1a1aa; height: 120px; overflow-y: auto; margin: 0; white-space: pre-wrap; word-break: break-all;"></pre>
-          <div style="margin-top: 10px; display: flex; gap: 8px; justify-content: flex-end;">
-            <button onclick="localStorage.clear(); sessionStorage.clear(); window.location.reload(true);" style="background: rgba(225,29,72,0.15); color: #fb7185; border: 1px solid rgba(225,29,72,0.3); padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">Limpiar Caché Local & Reintentar</button>
-          </div>
-        </div>
-
-        <noscript>
-          <p style="color: #fb7185; font-size: 13px; margin-top: 16px;">JavaScript es requerido para ejecutar CollectaHub.</p>
-        </noscript>
-      </div>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -50,37 +50,10 @@ class RootErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
   }
 }
 
-declare global {
-  interface Window {
-    __BOOT_LOGS__?: string[];
-  }
-}
-
-try {
-  const rootElement = document.getElementById('root');
-  if (!rootElement) {
-    throw new Error('Element with id "root" not found in DOM');
-  }
-
-  const root = createRoot(rootElement);
-  root.render(
-    <StrictMode>
-      <RootErrorBoundary>
-        <App />
-      </RootErrorBoundary>
-    </StrictMode>,
-  );
-} catch (err: any) {
-  console.error('Fatal mount error in main.tsx:', err);
-  const statusEl = document.getElementById('boot-status-text');
-  const card = document.getElementById('boot-debug-card');
-  const consoleEl = document.getElementById('boot-debug-console');
-  if (statusEl) {
-    statusEl.style.color = '#fb7185';
-    statusEl.textContent = 'Error al montar React: ' + (err?.message || err);
-  }
-  if (consoleEl) {
-    consoleEl.textContent = (consoleEl.textContent || '') + '\n[FATAL MOUNT] ' + (err?.stack || err?.message || err);
-  }
-  if (card) card.style.display = 'block';
-}
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <RootErrorBoundary>
+      <App />
+    </RootErrorBoundary>
+  </StrictMode>,
+);
