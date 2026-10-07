@@ -7,9 +7,9 @@ import { defineConfig } from 'vite';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ command }) => {
-  // Use relative base './' for production build so it works seamlessly on ANY repository name
-  // or URL capitalization (e.g. /CollectaHub/, /collectahub/, root domain) without 404 asset errors.
-  const base = process.env.VITE_BASE_PATH || (command === 'build' ? './' : '/');
+  // In production build for GitHub Pages (repo collectahub), use '/collectahub/' or env var
+  // In dev / AI Studio preview, use '/'
+  const base = process.env.VITE_BASE_PATH || (command === 'build' ? '/collectahub/' : '/');
 
   return {
     base,
