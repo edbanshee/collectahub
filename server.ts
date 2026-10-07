@@ -14,9 +14,25 @@ const port = Number(process.env.PORT) || 3000;
 
 // Cloudinary client helper
 function getCloudinary() {
-  const cloud_name = process.env.CLOUDINARY_CLOUD_NAME;
-  const api_key = process.env.CLOUDINARY_API_KEY;
-  const api_secret = process.env.CLOUDINARY_API_SECRET;
+  const rawUrl = (
+    process.env.CLOUDINARY_URL ||
+    process.env.CLOUDINARY_API_SECRET ||
+    ''
+  ).trim();
+
+  let cloud_name = (process.env.CLOUDINARY_CLOUD_NAME || '').trim().replace(/^["']|["']$/g, '');
+  let api_key = (process.env.CLOUDINARY_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+  let api_secret = (process.env.CLOUDINARY_API_SECRET || '').trim().replace(/^["']|["']$/g, '');
+
+  if (rawUrl.includes('cloudinary://')) {
+    const cleanUrl = rawUrl.replace(/^CLOUDINARY_URL=/, '').trim().replace(/^["']|["']$/g, '');
+    const match = cleanUrl.match(/^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/);
+    if (match) {
+      api_key = match[1];
+      api_secret = match[2];
+      cloud_name = match[3];
+    }
+  }
 
   if (!cloud_name || !api_key || !api_secret) {
     return null;
@@ -435,11 +451,6 @@ Do NOT wrap the output in extra commentary. Return only the raw JSON.`;
         folder,
         overwrite: true,
         resource_type: 'image',
-        transformation: [
-          { width: 1280, height: 1280, crop: 'limit' },
-          { quality: 'auto:good' },
-          { fetch_format: 'auto' },
-        ],
       };
 
       if (publicId && typeof publicId === 'string' && publicId.includes(cleanUserId)) {
@@ -448,9 +459,19 @@ Do NOT wrap the output in extra commentary. Return only the raw JSON.`;
 
       const result = await cld.uploader.upload(image, uploadOptions);
 
+      // Construct optimized CDN delivery URL dynamically without signature mismatch
+      const optimizedUrl = cld.url(result.public_id, {
+        transformation: [
+          { width: 1280, height: 1280, crop: 'limit' },
+          { quality: 'auto' },
+          { fetch_format: 'auto' },
+        ],
+        secure: true,
+      });
+
       return res.json({
         success: true,
-        url: result.secure_url,
+        url: optimizedUrl || result.secure_url,
         publicId: result.public_id,
         width: result.width,
         height: result.height,
@@ -459,6 +480,20 @@ Do NOT wrap the output in extra commentary. Return only the raw JSON.`;
       });
     } catch (err: any) {
       console.error('Error in /api/cloudinary/upload:', err?.message || err);
+
+      if (
+        err?.message?.includes('Invalid Signature') ||
+        err?.http_code === 401 ||
+        err?.message?.includes('401')
+      ) {
+        return res.status(401).json({
+          error: 'CLOUDINARY_INVALID_CREDENTIALS',
+          message:
+            req.body?.language === 'en'
+              ? 'Invalid Cloudinary credentials (Invalid Signature). Please check CLOUDINARY_API_SECRET and CLOUDINARY_API_KEY in Render Environment for extra spaces or quotes.'
+              : 'Error de credenciales en Cloudinary (Invalid Signature). Revisa en las variables de Render que CLOUDINARY_API_SECRET y CLOUDINARY_API_KEY no tengan espacios en blanco o comillas accidentales.',
+        });
+      }
 
       const isCloudinaryQuota =
         err?.http_code === 420 ||
