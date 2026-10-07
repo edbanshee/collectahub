@@ -37,7 +37,7 @@ jobs:
 
       - name: Build project
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://collectahub-backend.onrender.com' }}
         run: |
           npm run build
           cp dist/index.html dist/404.html
