@@ -22,7 +22,7 @@ import { AtomicWipeModal } from './components/modals/AtomicWipeModal';
 import { CloudOnboardingModal } from './components/modals/CloudOnboardingModal';
 import { DeviceDeleteConfirmModal } from './components/modals/DeviceDeleteConfirmModal';
 import { PortfolioInfoModal } from './components/modals/PortfolioInfoModal';
-import { DevConsoleDrawer } from './components/common/DevConsoleDrawer';
+import { DiagnosticConsoleModal } from './components/modals/DiagnosticConsoleModal';
 import { WelcomeView } from './components/welcome/WelcomeView';
 import { AlertCircle, Trash2, X, ExternalLink, ShieldAlert } from 'lucide-react';
 
@@ -101,6 +101,7 @@ const MainAppContent: React.FC = () => {
   const [importExportModalOpen, setImportExportModalOpen] = useState(false);
   const [atomicWipeModalOpen, setAtomicWipeModalOpen] = useState(false);
   const [portfolioInfoModalOpen, setPortfolioInfoModalOpen] = useState(false);
+  const [diagnosticConsoleOpen, setDiagnosticConsoleOpen] = useState(false);
   const [matrixTargetDeviceId, setMatrixTargetDeviceId] = useState<string | null>(null);
 
   const handleNavigateToMatrix = (deviceId?: string) => {
@@ -171,6 +172,7 @@ const MainAppContent: React.FC = () => {
         onOpenImportExport={() => setImportExportModalOpen(true)}
         onOpenAtomicWipe={() => setAtomicWipeModalOpen(true)}
         onOpenPortfolioInfo={() => setPortfolioInfoModalOpen(true)}
+        onOpenDiagnostic={() => setDiagnosticConsoleOpen(true)}
         onExitGuest={handleExitGuest}
       />
 
@@ -446,6 +448,11 @@ const MainAppContent: React.FC = () => {
         onClose={() => setPortfolioInfoModalOpen(false)}
       />
 
+      <DiagnosticConsoleModal
+        isOpen={diagnosticConsoleOpen}
+        onClose={() => setDiagnosticConsoleOpen(false)}
+      />
+
       {/* Simple Drive Delete Confirmation Modal */}
       {driveToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -549,9 +556,6 @@ const MainAppContent: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Admin Developer Console Drawer (Strictly restricted to theneonspartan@gmail.com) */}
-      <DevConsoleDrawer />
     </div>
   );
 };

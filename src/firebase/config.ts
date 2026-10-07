@@ -3,6 +3,7 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 import {
   initializeFirestore,
+  getFirestore,
   Firestore,
   doc,
   getDocFromServer,
@@ -11,8 +12,15 @@ import {
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+let appInstance;
+try {
+  appInstance = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+} catch (e) {
+  console.warn('Firebase initializeApp fallback:', e);
+  appInstance = getApps()[0] || initializeApp(firebaseConfig);
+}
 
+export const app = appInstance;
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
@@ -20,28 +28,40 @@ googleProvider.setCustomParameters({
   prompt: 'select_account',
 });
 
-// Configure Firestore with persistent local cache (IndexedDB) and ignoreUndefinedProperties
-export const db: Firestore =
-  (firebaseConfig as any).firestoreDatabaseId &&
-  (firebaseConfig as any).firestoreDatabaseId !== '(default)'
-    ? initializeFirestore(
-        app,
-        {
-          ignoreUndefinedProperties: true,
-          localCache: persistentLocalCache({
-            tabManager: persistentMultipleTabManager(),
-          }),
-        },
-        (firebaseConfig as any).firestoreDatabaseId
-      )
-    : initializeFirestore(app, {
-        ignoreUndefinedProperties: true,
-        localCache: persistentLocalCache({
-          tabManager: persistentMultipleTabManager(),
-        }),
-      });
+// Configure Firestore with graceful fallback if IndexedDB is blocked (e.g. private browsing)
+let dbInstance: Firestore;
+try {
+  const customDbId = (firebaseConfig as any).firestoreDatabaseId;
+  const dbOptions = {
+    ignoreUndefinedProperties: true,
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    }),
+  };
 
-// Test connection on boot as recommended in Firebase integration skill
+  if (customDbId && customDbId !== '(default)') {
+    dbInstance = initializeFirestore(app, dbOptions, customDbId);
+  } else {
+    dbInstance = initializeFirestore(app, dbOptions);
+  }
+} catch (error) {
+  console.warn('Firestore persistent cache initialization fallback:', error);
+  try {
+    const customDbId = (firebaseConfig as any).firestoreDatabaseId;
+    if (customDbId && customDbId !== '(default)') {
+      dbInstance = getFirestore(app, customDbId);
+    } else {
+      dbInstance = getFirestore(app);
+    }
+  } catch (innerError) {
+    console.error('Fatal Firestore instance creation:', innerError);
+    dbInstance = getFirestore(app);
+  }
+}
+
+export const db: Firestore = dbInstance;
+
+// Test connection in background without blocking boot
 export async function testFirestoreConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
@@ -51,4 +71,6 @@ export async function testFirestoreConnection() {
     }
   }
 }
-testFirestoreConnection();
+setTimeout(() => {
+  testFirestoreConnection();
+}, 100);
